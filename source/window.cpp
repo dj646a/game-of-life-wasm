@@ -24,7 +24,7 @@ Window::Window(const char* title, int x, int y, int w, int h, Renderer& renderer
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
     
-    uint32_t window_flags = SDL_WINDOW_OPENGL;
+    uint32_t window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
     m_handle = SDL_CreateWindow(m_title,
                                 m_position.x,
                                 m_position.y,
@@ -72,6 +72,25 @@ void Window::poll_events()
                     case SDLK_ESCAPE:
                     {
                         m_open = false;
+                    } break;
+                }
+            } break;
+
+            case SDL_WINDOWEVENT:
+            {
+                uint8_t window_event = event.window.event;
+                switch (window_event)
+                {
+                    // TODO: What's the difference between these two?
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    case SDL_WINDOWEVENT_RESIZED:
+                    {
+                        int window_w, window_h;
+                        SDL_GetWindowSize(m_handle, &m_size.w, &m_size.h);
+
+                        // TODO: Revise once we've decided how to size our frame relative
+                        //       to our windows.
+                        m_renderer.set_frame_size(m_size.w, m_size.h);
                     } break;
                 }
             } break;

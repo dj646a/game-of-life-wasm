@@ -60,6 +60,8 @@ void Renderer::set_frame_size(float w, float h)
 {
     m_frame_size.w = w;
     m_frame_size.h = h;
+
+    glViewport(0, 0, w, h);
 }
 
 void Renderer::clear(Color color)
