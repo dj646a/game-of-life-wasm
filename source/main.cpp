@@ -6,7 +6,6 @@
 
 /*
     TODOS:
-        Render in the renderer frame space instead of gl space.
         Render rects of different colors.
 
     Create platform abstractions for:
@@ -32,7 +31,7 @@ int main()
     {
         renderer.clear(COLOR_RED);
         renderer.draw_triangle();
-        renderer.draw_rect(-0.5f, +0.5f, 1.0f, -1.0f);
+        renderer.draw_rect(100, 100, 200, 200);
 
         window.swap_buffers();
         window.poll_events();

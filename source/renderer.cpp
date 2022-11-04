@@ -61,6 +61,7 @@ void Renderer::set_frame_size(float w, float h)
     m_frame_size.w = w;
     m_frame_size.h = h;
 
+    set_uniform_vec2("frame_size", (float*) &m_frame_size);
     glViewport(0, 0, w, h);
 }
 
@@ -136,3 +137,9 @@ GLuint Renderer::create_program(const char* vertex_source, const char* fragment_
     return program;
 }
 
+void Renderer::set_uniform_vec2(const char* name, float value[2])
+{
+    GLint location = glGetUniformLocation(m_program, name);
+    assert(location != -1);
+    glUniform2f(location, value[0], value[1]);
+}

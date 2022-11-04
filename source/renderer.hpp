@@ -26,6 +26,9 @@ public:
     void set_frame_size(float w, float h);
     void clear(Color color);
 
+    // TODO: Template specialization
+    void set_uniform_vec2(const char* name, float value[2]);
+
 private:
     const char* get_shader_type_string(GLenum type);
     GLuint create_shader(const char* source, GLenum type);

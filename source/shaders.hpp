@@ -3,9 +3,20 @@ static const char* vertex_source = R"(
 
 in vec2 position;
 
+uniform vec2 frame_size;
+
+vec2 frame_to_gl_space(vec2 point)
+{
+    vec2 result = point / frame_size;
+    result = result * 2.0f - 1.0f;
+    result.y *= -1.0f;
+    return result;
+}
+
 void main()
 {
-    gl_Position = vec4(position, 1, 1);
+    vec2 position_in_gl_space = frame_to_gl_space(position);
+    gl_Position = vec4(position_in_gl_space, 1, 1);
 }
 
 )";
