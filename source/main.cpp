@@ -7,7 +7,6 @@
 /*
     TODOS:
 
-    Draw rect.
     Create shader program.
 
     Create platform abstractions for:
@@ -33,6 +32,7 @@ int main()
     {
         renderer.clear(COLOR_RED);
         renderer.draw_triangle();
+        renderer.draw_rect(-0.5f, +0.5f, 1.0f, -1.0f);
 
         window.swap_buffers();
         window.poll_events();

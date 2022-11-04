@@ -55,3 +55,24 @@ void Renderer::clear(Color color)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
+void Renderer::draw_rect(float x, float y, float w, float h)
+{
+    float x0 = x;
+    float x1 = x0 + w;
+    float y0 = y;
+    float y1 = y + h;
+
+    float rect[] =
+    {
+        x0, y0,
+        x1, y0,
+        x0, y1,
+
+        x1, y0,
+        x0, y1,
+        x1, y1,
+    };
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(rect), &rect, GL_STATIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}

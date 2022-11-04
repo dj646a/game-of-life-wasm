@@ -18,6 +18,7 @@ class Renderer
 public:
     void init();
     void draw_triangle();
+    void draw_rect(float x, float y, float w, float h);
     void set_frame_size(float w, float h);
     void clear(Color color);
 };
