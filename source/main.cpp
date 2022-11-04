@@ -5,6 +5,16 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 
+/*
+    TODOS:
+        Create platform abstractions for:
+            Window management.
+            Keyboard management.
+            Mouse management.
+
+        Create renderer abstraction.
+*/
+
 static void SDL_ErrorAndExit()
 {
     fprintf(stderr, "%s\n", SDL_GetError());
