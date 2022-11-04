@@ -6,6 +6,8 @@
 
 /*
     TODOS:
+        Render in the renderer frame space instead of gl space.
+        Render rects of different colors.
 
     Create platform abstractions for:
         Keyboard management.
