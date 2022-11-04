@@ -29,7 +29,6 @@ int main()
     while (window.is_open())
     {
         renderer.clear(COLOR_RED);
-        renderer.draw_triangle();
         renderer.draw_rect(100, 100, 200, 200, COLOR_BLACK);
 
         window.swap_buffers();

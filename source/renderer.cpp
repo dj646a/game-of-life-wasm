@@ -48,19 +48,6 @@ void Renderer::init()
     glUseProgram(m_program);
 }
 
-void Renderer::draw_triangle()
-{
-    float triangle[] = 
-    {
-        +0.0f, +0.5f,
-        -0.5f, -0.5f,
-        +0.5f, -0.5f,
-    };
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), &triangle, GL_STATIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-}
-
 void Renderer::set_frame_size(float w, float h)
 {
     m_frame_size.w = w;
