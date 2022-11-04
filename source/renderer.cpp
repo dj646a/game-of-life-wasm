@@ -15,6 +15,13 @@ static void glewErrorAndExit(GLenum error_code)
     exit(EXIT_FAILURE);
 }
 
+Renderer::Renderer()
+: m_vertex_array(0)
+, m_vertex_buffer(0)
+, m_program(0)
+, m_frame_size({0, 0})
+{ }
+
 void Renderer::init()
 {
     GLenum glew_init_result = glewInit();

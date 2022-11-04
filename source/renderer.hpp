@@ -19,6 +19,7 @@ class Renderer
     struct { float w, h; } m_frame_size;
 
 public:
+    Renderer();
     void init();
     void draw_triangle();
     void draw_rect(float x, float y, float w, float h);
