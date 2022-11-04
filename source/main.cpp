@@ -7,6 +7,8 @@
 /*
     TODOS:
 
+    Support textured rects.
+
     Create platform abstractions for:
         Keyboard management.
         Mouse management.
