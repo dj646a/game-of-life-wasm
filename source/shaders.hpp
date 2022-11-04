@@ -2,6 +2,9 @@ static const char* vertex_source = R"(
 #version 300 es
 
 in vec2 position;
+in vec4 color;
+
+out vec4 frag_color;
 
 uniform vec2 frame_size;
 
@@ -17,6 +20,8 @@ void main()
 {
     vec2 position_in_gl_space = frame_to_gl_space(position);
     gl_Position = vec4(position_in_gl_space, 1, 1);
+
+    frag_color = color;
 }
 
 )";
@@ -25,12 +30,14 @@ static const char* fragment_source = R"(
 #version 300 es
 precision mediump float;
 
+in vec4 frag_color;
+
 out vec4 color;
 
 void main()
 {
     // Green
-    color = vec4(0, 1, 0, 1);
+    color = frag_color;
 }
 
 )";

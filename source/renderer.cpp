@@ -36,8 +36,13 @@ void Renderer::init()
     glGenBuffers(1, &m_vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, m_vertex_buffer);
 
+    // TODO: Make this code more robust so that the vertex buffer layout stays
+    //       in sync with the "Vertex" type.
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (const void*) 0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*) offsetof(Vertex, position));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*) offsetof(Vertex, color));
 
     m_program = create_program(vertex_source, fragment_source);
     glUseProgram(m_program);
@@ -71,26 +76,28 @@ void Renderer::clear(Color color)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void Renderer::draw_rect(float x, float y, float w, float h)
+void Renderer::draw_rect(float x, float y, float w, float h, Color color)
 {
     float x0 = x;
     float x1 = x0 + w;
     float y0 = y;
     float y1 = y + h;
 
-    float rect[] =
-    {
-        x0, y0,
-        x1, y0,
-        x0, y1,
+    Quad quad = {};
+    Vertex* vertices = quad;
 
-        x1, y0,
-        x0, y1,
-        x1, y1,
-    };
+    vertices[0].position = { x0, y0 };
+    vertices[1].position = { x1, y0 };
+    vertices[2].position = { x0, y1 };
+    vertices[3].position = { x1, y0 };
+    vertices[4].position = { x0, y1 };
+    vertices[5].position = { x1, y1 };
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(rect), &rect, GL_STATIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    for (int i = 0; i < VERTCIES_PER_QUAD; i++)
+        vertices[i].color = color;
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
 }
 
 const char* Renderer::get_shader_type_string(GLenum type)

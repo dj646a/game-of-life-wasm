@@ -10,6 +10,22 @@ static const Color COLOR_BLUE  {0, 0, 1, 1};
 static const Color COLOR_WHITE {1, 1, 1, 1};
 static const Color COLOR_BLACK {0, 0, 0, 1};
 
+template<typename T>
+union Vec2
+{
+    struct { T x, y; };
+    struct { T w, h; };
+};
+
+struct Vertex
+{
+    Vec2<float> position;
+    Color color;
+};
+
+static const int VERTCIES_PER_QUAD = 6;
+typedef Vertex Quad[VERTCIES_PER_QUAD];
+
 class Renderer
 {
     GLuint m_vertex_array;
@@ -22,7 +38,7 @@ public:
     Renderer();
     void init();
     void draw_triangle();
-    void draw_rect(float x, float y, float w, float h);
+    void draw_rect(float x, float y, float w, float h, Color color);
     void set_frame_size(float w, float h);
     void clear(Color color);
 

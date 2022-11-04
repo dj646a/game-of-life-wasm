@@ -6,7 +6,6 @@
 
 /*
     TODOS:
-        Render rects of different colors.
 
     Create platform abstractions for:
         Keyboard management.
@@ -31,7 +30,7 @@ int main()
     {
         renderer.clear(COLOR_RED);
         renderer.draw_triangle();
-        renderer.draw_rect(100, 100, 200, 200);
+        renderer.draw_rect(100, 100, 200, 200, COLOR_BLACK);
 
         window.swap_buffers();
         window.poll_events();
