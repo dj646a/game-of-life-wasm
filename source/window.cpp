@@ -1,5 +1,7 @@
 #include "window.hpp"
+#include "renderer.hpp"
 
+// TODO: Remove when "project base" file done.
 #include <SDL2/SDL.h>
 
 static void SDL_ErrorAndExit()
@@ -8,12 +10,13 @@ static void SDL_ErrorAndExit()
     exit(EXIT_FAILURE);
 }
 
-Window::Window(const char* title, int x, int y, int w, int h)
+Window::Window(const char* title, int x, int y, int w, int h, Renderer& renderer)
 : m_handle(nullptr)
 , m_title(title)
 , m_position({x, y})
 , m_size({w, h})
 , m_open(false)
+, m_renderer(renderer)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         SDL_ErrorAndExit();
@@ -76,4 +79,12 @@ void Window::poll_events()
     }
 }
 
+int Window::get_width()
+{
+    return m_size.w;
+}
 
+int Window::get_height()
+{
+    return m_size.h;
+}
