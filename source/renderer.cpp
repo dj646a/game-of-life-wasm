@@ -96,6 +96,7 @@ void Renderer::draw_rect(float x, float y, float w, float h, Color color)
     for (int i = 0; i < VERTCIES_PER_QUAD; i++)
         vertices[i].color = color;
 
+    // TODO: Remove when batch rendering suppported
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
     glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
 }
