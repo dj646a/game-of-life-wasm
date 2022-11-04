@@ -7,8 +7,6 @@
 /*
     TODOS:
 
-    Create shader program.
-
     Create platform abstractions for:
         Keyboard management.
         Mouse management.
