@@ -6,21 +6,30 @@
 
 /*
     TODOS:
+    
+    HIGH PRIORITY
+    Renderer should support drawing text.
+    Renderer should batch draw calls.
 
+    MEDIUM PRIORITY
     Create platform abstractions for:
         Keyboard management.
         Mouse management.
+        
+    LOW PRIORITY
+    Renderer should handle z ordering gracefully.
 */
 
 int main()
 {
+    Renderer renderer;
+    
     const char* window_title = "Game of Life WASM";
     int window_x             = 1000;
     int window_y             = 100;
     int window_w             = 800;
     int window_h             = 450;
 
-    Renderer renderer;
     Window window(window_title, window_x, window_y, window_w, window_h, renderer);
 
     renderer.init();
