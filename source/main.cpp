@@ -7,8 +7,6 @@
 /*
     TODOS:
 
-    Support textured rects.
-
     Create platform abstractions for:
         Keyboard management.
         Mouse management.
@@ -31,7 +29,8 @@ int main()
     while (window.is_open())
     {
         renderer.clear(COLOR_RED);
-        renderer.draw_rect(100, 100, 200, 200, COLOR_BLACK);
+        renderer.draw_rect(300, 100, 100, 100, COLOR_BLACK);
+        renderer.draw_rect(100, 100, 100, 100, "./assets/image.png");
 
         window.swap_buffers();
         window.poll_events();

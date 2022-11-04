@@ -1,6 +1,7 @@
 
 typedef unsigned int GLuint;
 typedef unsigned int GLenum;
+typedef signed   int GLint;
 
 struct Color { float r, g, b, a; };
 
@@ -15,12 +16,14 @@ union Vec2
 {
     struct { T x, y; };
     struct { T w, h; };
+    struct { T s, t; };
 };
 
 struct Vertex
 {
     Vec2<float> position;
     Color color;
+    Vec2<float> tex_coords;
 };
 
 static const int VERTCIES_PER_QUAD = 6;
@@ -31,6 +34,7 @@ class Renderer
     GLuint m_vertex_array;
     GLuint m_vertex_buffer;
     GLuint m_program;
+    GLuint m_texture;
     
     struct { float w, h; } m_frame_size;
 
@@ -38,11 +42,14 @@ public:
     Renderer();
     void init();
     void draw_rect(float x, float y, float w, float h, Color color);
+    void draw_rect(float x, float y, float w, float h, const char* filepath);
     void set_frame_size(float w, float h);
     void clear(Color color);
 
     // TODO: Template specialization
+    GLint get_uniform_location(const char* name);
     void set_uniform_vec2(const char* name, float value[2]);
+    void set_uniform_bool(const char* name, bool* value);
 
 private:
     const char* get_shader_type_string(GLenum type);

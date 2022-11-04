@@ -3,8 +3,10 @@ static const char* vertex_source = R"(
 
 in vec2 position;
 in vec4 color;
+in vec2 tex_coords;
 
 out vec4 frag_color;
+out vec2 frag_tex_coords;
 
 uniform vec2 frame_size;
 
@@ -22,6 +24,7 @@ void main()
     gl_Position = vec4(position_in_gl_space, 1, 1);
 
     frag_color = color;
+    frag_tex_coords = tex_coords;
 }
 
 )";
@@ -31,13 +34,20 @@ static const char* fragment_source = R"(
 precision mediump float;
 
 in vec4 frag_color;
+in vec2 frag_tex_coords;
 
 out vec4 color;
 
+uniform bool is_textured;
+
+uniform sampler2D sampler;
+
 void main()
 {
-    // Green
-    color = frag_color;
+    if (is_textured)
+        color = texture(sampler, frag_tex_coords) * frag_color;
+    else
+        color = frag_color;
 }
 
 )";
