@@ -6,9 +6,13 @@
 
 /*
     TODOS:
-        Create platform abstractions for:
-            Keyboard management.
-            Mouse management.
+
+    Draw rect.
+    Create shader program.
+
+    Create platform abstractions for:
+        Keyboard management.
+        Mouse management.
 */
 
 int main()
