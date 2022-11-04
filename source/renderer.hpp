@@ -1,4 +1,6 @@
+
 typedef unsigned int GLuint;
+typedef unsigned int GLenum;
 
 struct Color { float r, g, b, a; };
 
@@ -12,6 +14,7 @@ class Renderer
 {
     GLuint m_vertex_array;
     GLuint m_vertex_buffer;
+    GLuint m_program;
     
     struct { float w, h; } m_frame_size;
 
@@ -21,4 +24,9 @@ public:
     void draw_rect(float x, float y, float w, float h);
     void set_frame_size(float w, float h);
     void clear(Color color);
+
+private:
+    const char* get_shader_type_string(GLenum type);
+    GLuint create_shader(const char* source, GLenum type);
+    GLuint create_program(const char* vertex_source, const char* fragment_source);
 };
