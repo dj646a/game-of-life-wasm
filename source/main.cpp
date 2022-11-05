@@ -23,7 +23,21 @@
 
 int main()
 {
-    Renderer renderer;
+    // TODO: Someway to pre-determine the correct bitmap dimensions
+    //       to hold the font glpyh data.
+    int font_bitmap_width    = 1000;
+    int font_bitmap_height   = 1000;
+    int font_bitmap_channels = 4;
+    Bitmap font_bitmap(font_bitmap_width, font_bitmap_height, font_bitmap_channels);
+    
+    // TODO: Get a font with a "permissive" licence and commit it into the project.
+    // NOTE: If ./assets/font.ttf doesn't exist then place it in the folder.
+    float font_size           = 100;
+    const char* font_filepath = "./assets/font.ttf";
+    int codepoint_range[]     = {0, 127};
+    Font font(font_bitmap, codepoint_range, font_size, font_filepath);
+
+    Renderer renderer(font);
     
     const char* window_title = "Game of Life WASM";
     int window_x             = 1000;
@@ -43,6 +57,7 @@ int main()
         renderer.clear(COLOR_RED);
         renderer.draw_rect(300, 100, 100, 100, COLOR_BLACK);
         renderer.draw_rect(100, 100, 100, 100, "./assets/image.png");
+        renderer.draw_text(100, 300, 50, "Hello, %s", "Bob");
 
         window.swap_buffers();
         window.poll_events();

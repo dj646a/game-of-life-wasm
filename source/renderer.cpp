@@ -1,5 +1,6 @@
 #include "renderer.hpp"
 #include "shaders.hpp"
+#include "utils.hpp"
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -10,6 +11,232 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
+#include <cstring>
+
+void* Bitmap::get_pixel_buffer()
+{
+    return m_pixels;
+}
+
+int Bitmap::get_width()
+{
+    return m_size.w;
+}
+
+int Bitmap::get_height()
+{
+    return m_size.h;
+}
+
+int Bitmap::get_stride()
+{
+    return m_stride;
+}
+
+int Bitmap::get_channels()
+{
+    return m_channels;
+}
+
+void Bitmap::copy_grayscale_as_rgba(Bitmap& grayscale_bitmap)
+{
+    assert(grayscale_bitmap.get_height() == m_size.h);
+    assert(grayscale_bitmap.get_width() == m_size.w);
+    assert(grayscale_bitmap.get_channels() == 1);
+
+    unsigned char* grayscale_pixels = static_cast<unsigned char*>(grayscale_bitmap.get_pixel_buffer());
+    unsigned char* rbga_pixels      = static_cast<unsigned char*>(m_pixels);
+
+    int width = m_size.w;
+    int height = m_size.h;
+    
+    // TODO: Pixel C++ iterator
+    for (int y = 0; y < height; y++)
+    {
+        int grayscale_index             = y * grayscale_bitmap.get_stride();
+        unsigned char* grayscale_offset = &grayscale_pixels[grayscale_index];
+
+        int rgba_index                  = y * m_stride;
+        unsigned char* rbga_offset      = &rbga_pixels[rgba_index];
+
+        for (int x = 0; x < width; x++)
+        {
+            rbga_offset[x * 4 + 0] = grayscale_offset[x];
+            rbga_offset[x * 4 + 1] = grayscale_offset[x];
+            rbga_offset[x * 4 + 2] = grayscale_offset[x];
+            rbga_offset[x * 4 + 3] = grayscale_offset[x];
+        }
+    }
+}
+
+Bitmap::Bitmap(int width, int height, int channels)
+: m_size({width, height})
+, m_channels(channels)
+, m_stride(width * channels)
+{
+    // TODO: Remove malloc when memory strategy finalized.
+    m_pixels = malloc(width * height * channels);
+    memset(m_pixels, 0, width * height * channels);
+}
+
+Bitmap::~Bitmap()
+{
+    free(m_pixels);
+    memset(this, 0, sizeof(*this));
+}
+
+Font::Font(Bitmap& bitmap, int codepoint_range[2], float font_size, const char* filepath)
+: m_bitmap(bitmap)
+, m_font_size(font_size)
+, m_filepath(filepath)
+, m_first_codepoint(codepoint_range[0])
+, m_last_codepoint(codepoint_range[1])
+{
+
+    int grayscale_channels = 1;
+    Bitmap grayscale_bitmap(m_bitmap.get_width(), m_bitmap.get_height(), grayscale_channels);
+
+    stbtt_pack_context pack_context = {};
+    int padding                     = 1;
+
+    stbtt_PackBegin(&pack_context,
+                    static_cast<unsigned char*>(grayscale_bitmap.get_pixel_buffer()),
+                    grayscale_bitmap.get_width(),
+                    grayscale_bitmap.get_height(),
+                    grayscale_bitmap.get_stride(),
+                    padding,
+                    nullptr);
+
+    File font_file("./assets/font.ttf");
+    int font_index        = 0;
+    int num_of_codepoints = m_last_codepoint - m_first_codepoint + 1;
+    // TODO: Remove malloc when memory strategy finalized
+    m_packedchars.resize(num_of_codepoints);
+
+    // TODO: Remove when debugged.
+    // stbtt_packedchar temp_packed_chars[128] = {};
+        
+    stbtt_PackFontRange(&pack_context,
+                        static_cast<const unsigned char*>(font_file.get_data()),
+                        font_index,
+                        font_size,
+                        m_first_codepoint,
+                        num_of_codepoints,
+                        m_packedchars.get_underlying_buffer());
+    
+    stbtt_PackEnd(&pack_context);
+
+    m_bitmap.copy_grayscale_as_rgba(grayscale_bitmap);
+}
+
+Font::~Font()
+{
+    memset(this, 0, sizeof(*this));
+}
+
+Bitmap& Font::get_bitmap()
+{
+    return m_bitmap;
+}
+
+Text::Text(Font& font, float text_size, const char* format, ...)
+: m_font(font)
+{
+    va_list va_list;
+    va_start(va_list, format);
+    *this = Text(font, text_size, format, va_list);
+    va_end(va_list);
+}
+
+Text::Text(Font& font, float text_size, const char* format, va_list va_list)
+: m_text_size(text_size)
+, m_font(font)
+{
+    Array<char> buffer(TEXT_MAX);
+    m_length = vsnprintf(buffer.get_underlying_buffer(), TEXT_MAX-1, format, va_list);
+    m_glyph_rects.resize(m_length);
+    m_glyph_tex_coords.resize(m_length);
+
+    float x = 0;
+    float y = 0;
+
+    // TODO: If we support unicode then we'll have to alter this slightly.
+    for (size_t i = 0; i < m_length; i++) 
+    {
+        // TODO: Handle scaling.
+        char character = buffer.get(i);
+        stbtt_packedchar glyph = m_font.get_glyph(character);
+        float glyph_width  = glyph.x1 - glyph.x0;
+        float glyph_height = glyph.y1 - glyph.y0;
+
+        /* ------------------------------- Glyph screen position ------------------------------ */
+        Vec4<float> glyph_rect = {};
+
+        glyph_rect.x0 = x + glyph.xoff;
+        glyph_rect.x1 = glyph_rect.x0 + glyph_width;
+        x += glyph.xadvance;
+
+        glyph_rect.y0 = y + glyph.yoff;
+        glyph_rect.y1 = glyph_rect.y0 + glyph_height;
+
+        m_glyph_rects.push(glyph_rect);
+
+        /* --------------------------- Glpyh texture sample position -------------------------- */
+        Vec4<float> glyp_tex_coord = {};
+        glyp_tex_coord.s0 = (float) glyph.x0 / font.get_bitmap().get_width();
+        glyp_tex_coord.s1 = (float) glyph.x1 / font.get_bitmap().get_width();
+        glyp_tex_coord.t0 = (float) glyph.y0 / font.get_bitmap().get_height();
+        glyp_tex_coord.t1 = (float) glyph.y1 / font.get_bitmap().get_height();
+
+        m_glyph_tex_coords.push(glyp_tex_coord);
+    }
+
+    Vec4<float> first_glyph = m_glyph_rects.first();
+    Vec4<float> last_glyph  = m_glyph_rects.last();
+    m_size.w = last_glyph.x1 - first_glyph.x0;
+    m_size.h = text_size;
+}
+
+void Text::operator=(const Text& other)
+{
+    *this = Text(other);
+}
+
+Text::Text(const Text& text)
+: m_font(text.m_font)
+, m_size(text.m_size)
+, m_length(text.m_length)
+, m_text_size(text.m_text_size)
+, m_glyph_rects(text.m_glyph_rects)
+{ }
+
+void Text::adjust_text(float x, float y)
+{
+    for (size_t i = 0; i < m_length; i++)
+    {
+        Vec4<float>& glyph_rect = m_glyph_rects.get(i);
+        glyph_rect.x0 += x;
+        glyph_rect.x1 += x;
+
+        glyph_rect.y0 += y;
+        glyph_rect.y1 += y;
+    }
+}
+
+int Text::get_length()
+{
+    return m_length;
+}
+
+Vec4<float> Text::get_glyph_rect(size_t index)
+{
+    return m_glyph_rects.get(index);
+}
+
+Vec4<float> Text::get_glyph_tex_coord(size_t index)
+{
+    return m_glyph_tex_coords.get(index);
+}
 
 static void glewErrorAndExit(GLenum error_code)
 {
@@ -17,13 +244,21 @@ static void glewErrorAndExit(GLenum error_code)
     exit(EXIT_FAILURE);
 }
 
-Renderer::Renderer()
-: m_vertex_array(0)
+Renderer::Renderer(Font& font)
+: m_font(font)
+, m_vertex_array(0)
 , m_vertex_buffer(0)
 , m_program(0)
 , m_texture(0)
 , m_frame_size({0, 0})
 { }
+
+stbtt_packedchar Font::get_glyph(char c)
+{
+    int char_index = static_cast<int>(c);
+    assert(char_index >= m_first_codepoint && char_index <= m_last_codepoint);
+    return m_packedchars.get(char_index);
+}
 
 void Renderer::init()
 {
@@ -159,6 +394,77 @@ void Renderer::draw_rect(float x, float y, float w, float h, const char* filepat
     // TODO: Remove when batch rendering suppported
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
     glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
+}
+
+void Renderer::draw_text(float x, float y, float text_size ,const char* format, ...)
+{
+    va_list va_list;
+    va_start(va_list, format);
+    Text text = Text(m_font, text_size, format, va_list);
+    va_end(va_list);
+
+    draw_text(x, y, text);
+}
+
+void Renderer::draw_text(float x, float y, Text& text)
+{
+    text.adjust_text(x, y);
+    
+    // TODO: Deduplicate code in draw_rect functions.
+    Bitmap& font_bitmap = m_font.get_bitmap();
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, font_bitmap.get_width(), font_bitmap.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, font_bitmap.get_pixel_buffer());
+
+    // TODO: What should these be?
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    for (size_t i = 0; i < text.get_length(); i++)
+    {
+        Vec4<float> glyph_rect = text.get_glyph_rect(i);
+        
+        float x0 = glyph_rect.x0;
+        float x1 = glyph_rect.x1;
+        float y0 = glyph_rect.y0;
+        float y1 = glyph_rect.y1;
+
+        Quad quad = {};
+        Vertex* vertices = quad;
+
+        vertices[0].position = { x0, y0 };
+        vertices[1].position = { x1, y0 };
+        vertices[2].position = { x0, y1 };
+        vertices[3].position = { x1, y0 };
+        vertices[4].position = { x0, y1 };
+        vertices[5].position = { x1, y1 };
+
+        for (int i = 0; i < VERTCIES_PER_QUAD; i++)
+            vertices[i].color = COLOR_WHITE;
+
+        Vec4<float> glyph_tex_coord = text.get_glyph_tex_coord(i);
+
+        float s0 = glyph_tex_coord.s0;
+        float s1 = glyph_tex_coord.s1;
+        float t0 = glyph_tex_coord.t0;
+        float t1 = glyph_tex_coord.t1;
+
+        vertices[0].tex_coords = { s0, t0 };
+        vertices[1].tex_coords = { s1, t0 };
+        vertices[2].tex_coords = { s0, t1 };
+        vertices[3].tex_coords = { s1, t0 };
+        vertices[4].tex_coords = { s0, t1 };
+        vertices[5].tex_coords = { s1, t1 };
+
+        bool is_textured = true;
+        set_uniform_bool("is_textured", &is_textured);
+
+        // TODO: Remove when batch rendering suppported
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
+    }
 }
 
 const char* Renderer::get_shader_type_string(GLenum type)
