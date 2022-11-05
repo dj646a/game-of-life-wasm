@@ -33,6 +33,8 @@ int main()
 
     Window window(window_title, window_x, window_y, window_w, window_h, renderer);
 
+    // Must wait for the window to create a valid OpenGL context before initializing the 
+    // renderer.
     renderer.init();
     renderer.set_frame_size(window.get_width(), window.get_height());
 
