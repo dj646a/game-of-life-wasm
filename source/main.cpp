@@ -6,6 +6,7 @@
 
 /*
     TODOS:
+    Create "base.hpp" for common project code.
     
     HIGH PRIORITY
     Renderer should batch draw calls.
