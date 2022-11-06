@@ -46,6 +46,7 @@ bool Window::is_open()
 
 void Window::swap_buffers()
 {
+    m_renderer.flush();
     SDL_GL_SwapWindow(m_handle);
 }
 

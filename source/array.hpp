@@ -93,6 +93,38 @@ public:
         return m_size;
     }
 
+    size_t get_used()
+    {
+        return m_used;
+    }
+
+    bool is_full()
+    {
+        return m_used == m_size;
+    }
+
+    void clear()
+    {
+        m_used = 0;
+    }
+
+    size_t get_used_amount_in_bytes()
+    {
+        return sizeof(T) * m_used;
+    }
+
+    size_t get_size_amount_in_bytes()
+    {
+        return sizeof(T) * m_size;
+    }
+
+    void clear_and_zero()
+    {
+        size_t num_of_bytes = sizeof(T) * m_size;
+        memset(m_buffer, 0, num_of_bytes);
+        clear();
+    }
+
     /* ------------------------------------- Iterator ------------------------------------- */
     class Iterator
     {

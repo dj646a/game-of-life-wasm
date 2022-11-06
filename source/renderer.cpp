@@ -204,6 +204,20 @@ void Renderer::init()
     glGenBuffers(1, &m_vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, m_vertex_buffer);
 
+    // Reserving space on the CPU and GPU for quad data.e
+    // Once we've reached the capacity of the buffer it is flushed (See: Renderer::flush)
+    // and a draw call is issued on the GPU.
+    
+    // TODO: Use one buffer and use ranges & layers instead.
+    //       Will be more important to do this once we run into Z ordering problems.
+
+    m_colored_quads.resize(QUAD_BUFFER_CAPACITY);
+    m_textured_quads.resize(QUAD_BUFFER_CAPACITY);
+    m_text_quads.resize(QUAD_BUFFER_CAPACITY);
+
+    size_t quad_buffer_size_in_bytes = QUAD_BUFFER_CAPACITY * sizeof(Quad);
+    glBufferData(GL_ARRAY_BUFFER, quad_buffer_size_in_bytes, nullptr, GL_DYNAMIC_DRAW);
+
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &m_texture);
 
@@ -238,22 +252,10 @@ void Renderer::clear(Color color)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void Renderer::draw_rect(Vec4<float> rect, Color color, const char* filepath, Vec4<float> tex_coords, bool is_textured)
+void Renderer::draw_rect(Vec4<float> rect, Color color, const char* filepath, Vec4<float> tex_coords, QuadType type)
 {
-    if (filepath)
-    {
-        int desired_channels = 4;
-        int image_w, image_h, image_channels;
-        uint8_t* image_data = stbi_load(filepath, &image_w, &image_h, &image_channels, desired_channels);
-        assert(image_data);
-        assert(desired_channels == image_channels);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_w, image_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
-        stbi_image_free(image_data);
-    }
-
     Quad quad = {};
-    Vertex* vertices = quad;
+    Vertex* vertices = quad.vertices;
 
     vertices[0].position = { rect.x0, rect.y0 };
     vertices[1].position = { rect.x1, rect.y0 };
@@ -272,17 +274,40 @@ void Renderer::draw_rect(Vec4<float> rect, Color color, const char* filepath, Ve
     vertices[4].tex_coords = { tex_coords.s0, tex_coords.t1 };
     vertices[5].tex_coords = { tex_coords.s1, tex_coords.t1 };
 
-    set_uniform("is_textured", is_textured);
+    switch (type)
+    {
+        case QuadType::QUAD_COLORED:
+        {
+            push_quad_colored(quad);
+        } break;
 
-    // TODO: Remove when batch rendering suppported
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
+        case QuadType::QUAD_TEXTURED:
+        {
+            // TODO: Batch this when our asset strategy is completed.
+            int desired_channels = 4;
+            int image_w, image_h, image_channels;
+            uint8_t* image_data = stbi_load(filepath, &image_w, &image_h, &image_channels, desired_channels);
+            assert(image_data);
+            assert(desired_channels == image_channels);
 
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_w, image_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+            stbi_image_free(image_data);
+
+            // TODO: Don't immediately flush when sophisticated batch rendering is implemented.
+            push_quad_textured(quad);
+            flush_textured();
+        } break;
+        
+        case QuadType::QUAD_TEXT:
+        {
+            push_quad_text(quad);
+        } break;
+    }
 }
 
 void Renderer::draw_rect(Vec4<float> rect, Color color)
 {
-    draw_rect(rect, color, nullptr, { 0, 0, 0, 0 }, false);
+    draw_rect(rect, color, nullptr, { 0, 0, 0, 0 }, QuadType::QUAD_COLORED);
 }
 
 void Renderer::draw_rect(Vec4<float> rect, const char* filepath)
@@ -295,7 +320,7 @@ void Renderer::draw_rect(Vec4<float> rect, const char* filepath)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
-    draw_rect(rect, COLOR_WHITE, filepath, { 0, 0, 1, 1 }, true);
+    draw_rect(rect, COLOR_WHITE, filepath, { 0, 0, 1, 1 }, QuadType::QUAD_TEXTURED);
 }
 
 void Renderer::draw_text(float x, float y, float text_size ,const char* format, ...)
@@ -320,7 +345,6 @@ void Renderer::draw_text(float x, float y, Text& text)
     
     text.adjust_text(x, y);
     Bitmap<uint32_t>& font_bitmap = m_font.get_bitmap();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, font_bitmap.get_width(), font_bitmap.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, font_bitmap.get_pixel_buffer());
 
     Array<Vec4<float>>& glyph_rects       = text.get_glyph_rects();
     Array<Vec4<float>>& glyph_text_coords = text.get_glyph_tex_coords();
@@ -329,7 +353,7 @@ void Renderer::draw_text(float x, float y, Text& text)
     {
         Vec4<float> glyph_rect = glyph_rects[i];
         Vec4<float> glyph_tex_coord = glyph_text_coords[i];
-        draw_rect(glyph_rect, COLOR_WHITE, nullptr, glyph_tex_coord, true);
+        draw_rect(glyph_rect, COLOR_WHITE, nullptr, glyph_tex_coord, QuadType::QUAD_TEXT);
     }
 }
 
@@ -382,4 +406,114 @@ GLint Renderer::get_uniform_location(const char* name)
     GLint location = glGetUniformLocation(m_program, name);
     assert(location != -1);
     return location;
+}
+
+void Renderer::flush()
+{
+    flush_colored();
+    flush_textured();
+    flush_text();
+}
+
+void Renderer::flush_colored()
+{
+    // TODO: Code deduplication between flush methods
+
+    set_uniform("is_textured", false);
+    
+    Quad* quad_buffer                = m_colored_quads.get_underlying_buffer(); 
+    size_t quad_buffer_size_in_bytes = m_colored_quads.get_used_amount_in_bytes();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, quad_buffer_size_in_bytes, quad_buffer);
+
+    size_t quad_buffer_used          = m_colored_quads.get_used();
+    size_t num_of_vertices           = quad_buffer_used * VERTCIES_PER_QUAD;
+    glDrawArrays(GL_TRIANGLES, 0, num_of_vertices);
+
+    // TODO: Just clear?
+    m_colored_quads.clear_and_zero();
+}
+
+void Renderer::flush_textured()
+{
+    // TODO: Code deduplication between flush methods
+
+    set_uniform("is_textured", true);
+
+    // TODO: Once more sophisticated batch rendering is implemented then we can 
+    //       remove this check.
+    assert(m_textured_quads.get_used() <= 1);
+    
+    Quad* quad_buffer                = m_textured_quads.get_underlying_buffer(); 
+    size_t quad_buffer_size_in_bytes = m_textured_quads.get_used_amount_in_bytes();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, quad_buffer_size_in_bytes, quad_buffer);
+
+    size_t quad_buffer_used          = m_textured_quads.get_used();
+    size_t num_of_vertices           = quad_buffer_used * VERTCIES_PER_QUAD;
+    glDrawArrays(GL_TRIANGLES, 0, num_of_vertices);
+
+    // TODO: Just clear?
+    m_textured_quads.clear_and_zero();
+}
+
+void Renderer::flush_text()
+{
+    // TODO: Code deduplication between flush methods
+
+    set_uniform("is_textured", true);
+
+    // Uploading font texture to GPU
+    Bitmap<uint32_t>& font_bitmap = m_font.get_bitmap();
+    uint32_t* font_bitmap_pixels  = font_bitmap.get_pixel_buffer();
+    float font_bitmap_width       = font_bitmap.get_width();
+    float font_bitmap_height      = font_bitmap.get_height();
+
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_RGBA,
+                 font_bitmap_width,
+                 font_bitmap_height,
+                 0,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 font_bitmap_pixels);
+    
+    Quad* quad_buffer                = m_text_quads.get_underlying_buffer(); 
+    size_t quad_buffer_size_in_bytes = m_text_quads.get_used_amount_in_bytes();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, quad_buffer_size_in_bytes, quad_buffer);
+
+    size_t quad_buffer_used          = m_text_quads.get_used();
+    size_t num_of_vertices           = quad_buffer_used * VERTCIES_PER_QUAD;
+    glDrawArrays(GL_TRIANGLES, 0, num_of_vertices);
+
+    // TODO: Just clear?
+    m_text_quads.clear_and_zero();
+}
+
+void Renderer::push_quad_colored(Quad quad)
+{
+    // TODO: Deduplicate code on push_quad methods.
+    if (m_colored_quads.get_used() == m_colored_quads.get_size())
+        flush_colored();
+
+    m_colored_quads.push(quad);
+}
+
+void Renderer::push_quad_textured(Quad quad)
+{
+    // TODO: Deduplicate code on push_quad methods.
+    if (m_textured_quads.get_used() == m_textured_quads.get_size())
+        flush_textured();
+
+    m_textured_quads.push(quad);
+
+}
+
+void Renderer::push_quad_text(Quad quad)
+{
+    // TODO: Deduplicate code on push_quad methods.
+    if (m_text_quads.get_used() == m_text_quads.get_size())
+        flush_text();
+
+    m_text_quads.push(quad);
+
 }

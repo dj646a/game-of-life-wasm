@@ -198,8 +198,18 @@ struct Vertex
     Vec2<float> tex_coords;
 };
 
+enum class QuadType
+{
+    QUAD_COLORED,
+    QUAD_TEXTURED,
+    QUAD_TEXT
+};
+
 static const int VERTCIES_PER_QUAD = 6;
-typedef Vertex Quad[VERTCIES_PER_QUAD];
+struct Quad
+{
+    Vertex vertices[6];
+};
 
 class Renderer
 {
@@ -211,11 +221,17 @@ class Renderer
     
     struct { float w, h; } m_frame_size;
 
+    // TODO: What should this be?
+    static const int QUAD_BUFFER_CAPACITY = 1024;
+    Array<Quad> m_colored_quads;
+    Array<Quad> m_textured_quads;
+    Array<Quad> m_text_quads;
+
 public:
     Renderer(Font& font);
     void init();
 
-    void draw_rect(Vec4<float> rect, Color color, const char* filepath, Vec4<float> tex_coords, bool is_textured);
+    void draw_rect(Vec4<float> rect, Color color, const char* filepath, Vec4<float> tex_coords, QuadType type);
     void draw_rect(Vec4<float>, Color color);
     void draw_rect(Vec4<float>, const char* filepath);
     void draw_text(float x, float y, float text_size, const char* format, ...);
@@ -224,7 +240,6 @@ public:
     void set_font(Font& font);
     void set_frame_size(float w, float h);
     void clear(Color color);
-
     
     GLint get_uniform_location(const char* name);
 
@@ -247,7 +262,17 @@ public:
         glUniform2f(location, value_as_array[0], value_as_array[1]);
     }
 
+    void flush();
+
 private:
+    void push_quad_colored(Quad quad);
+    void push_quad_textured(Quad quad);
+    void push_quad_text(Quad quad);
+
+    void flush_colored();
+    void flush_textured();
+    void flush_text();
+    
     const char* get_shader_type_string(GLenum type);
     GLuint create_shader(const char* source, GLenum type);
     GLuint create_program(const char* vertex_source, const char* fragment_source);
