@@ -301,7 +301,8 @@ void Renderer::set_frame_size(float w, float h)
     m_frame_size.w = w;
     m_frame_size.h = h;
 
-    set_uniform_vec2("frame_size", (float*) &m_frame_size);
+    Vec2<float> frame_size = { m_frame_size.w, m_frame_size.h };
+    set_uniform("frame_size", frame_size);
     glViewport(0, 0, w, h);
 }
 
@@ -334,7 +335,7 @@ void Renderer::draw_rect(float x, float y, float w, float h, Color color)
         vertices[i].color = color;
 
     bool is_textured = false;
-    set_uniform_bool("is_textured", &is_textured);
+    set_uniform("is_textured", is_textured);
 
     // TODO: Remove when batch rendering suppported
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
@@ -392,8 +393,7 @@ void Renderer::draw_rect(float x, float y, float w, float h, const char* filepat
     vertices[4].tex_coords = { s0, t1 };
     vertices[5].tex_coords = { s1, t1 };
 
-    bool is_textured = true;
-    set_uniform_bool("is_textured", &is_textured);
+    set_uniform("is_textured", true);
 
     // TODO: Remove when batch rendering suppported
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
@@ -462,8 +462,7 @@ void Renderer::draw_text(float x, float y, Text& text)
         vertices[4].tex_coords = { s0, t1 };
         vertices[5].tex_coords = { s1, t1 };
 
-        bool is_textured = true;
-        set_uniform_bool("is_textured", &is_textured);
+        set_uniform("is_textured", true);
 
         // TODO: Remove when batch rendering suppported
         glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
@@ -520,16 +519,4 @@ GLint Renderer::get_uniform_location(const char* name)
     GLint location = glGetUniformLocation(m_program, name);
     assert(location != -1);
     return location;
-}
-
-void Renderer::set_uniform_vec2(const char* name, float value[2])
-{
-    GLint location = get_uniform_location(name);
-    glUniform2f(location, value[0], value[1]);
-}
-
-void Renderer::set_uniform_bool(const char* name, bool* value)
-{
-    GLint location = get_uniform_location(name);
-    glUniform1i(location, *value);
 }

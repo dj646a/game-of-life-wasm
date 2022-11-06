@@ -127,10 +127,27 @@ public:
     void set_frame_size(float w, float h);
     void clear(Color color);
 
-    // TODO: Template specialization
+    
     GLint get_uniform_location(const char* name);
-    void set_uniform_vec2(const char* name, float value[2]);
-    void set_uniform_bool(const char* name, bool* value);
+
+    /* ----------------------------- Uniforms specializations ----------------------------- */
+    template<typename T>
+    void set_uniform(const char* name, T value);
+
+    template<>
+    void set_uniform<bool>(const char* name, bool value)
+    {
+        GLint location = get_uniform_location(name);
+        glUniform1i(location, value);
+    }
+
+    template<>
+    void set_uniform<Vec2<float>>(const char* name, Vec2<float> value)
+    {
+        float* value_as_array = (float*) &value;
+        GLint location = get_uniform_location(name);
+        glUniform2f(location, value_as_array[0], value_as_array[1]);
+    }
 
 private:
     const char* get_shader_type_string(GLenum type);
