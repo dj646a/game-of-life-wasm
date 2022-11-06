@@ -29,7 +29,7 @@ Font::Font(Bitmap<uint32_t>& bitmap, int codepoint_range[2], float font_size, co
                     padding,
                     nullptr);
 
-    File font_file("./assets/font.ttf");
+    File font_file(filepath);;
     uint8_t* font_data = static_cast<uint8_t*>(font_file.get_data());
     int font_index           = 0;
     int num_of_codepoints    = m_last_codepoint - m_first_codepoint + 1;

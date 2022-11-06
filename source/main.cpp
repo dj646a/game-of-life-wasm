@@ -25,10 +25,8 @@ int main()
     int font_bitmap_channels = 4;
     Bitmap<uint32_t> font_bitmap(font_bitmap_width, font_bitmap_height, font_bitmap_channels);
     
-    // TODO: Get a font with a "permissive" licence and commit it into the project.
-    // NOTE: If ./assets/font.ttf doesn't exist then place it in the folder.
     float font_size           = 100;
-    const char* font_filepath = "./assets/font.ttf";
+    const char* font_filepath = "./assets/JetBrainsMono-Regular.ttf";
     int codepoint_range[]     = {0, 127};
     Font font(font_bitmap, codepoint_range, font_size, font_filepath);
 
