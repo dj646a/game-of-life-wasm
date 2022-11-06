@@ -8,7 +8,6 @@
     TODOS:
     
     HIGH PRIORITY
-    Renderer should support drawing text.
     Renderer should batch draw calls.
     Pragma once in header files.
 
