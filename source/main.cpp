@@ -51,8 +51,8 @@ int main()
     while (window.is_open())
     {
         renderer.clear(COLOR_RED);
-        renderer.draw_rect(300, 100, 100, 100, COLOR_BLACK);
-        renderer.draw_rect(100, 100, 100, 100, "./assets/image.png");
+        renderer.draw_rect({ 300, 100, 400, 200 }, COLOR_BLACK);
+        renderer.draw_rect({ 100, 100, 200, 200 }, "./assets/image.png");
         renderer.draw_text(100, 300, 50, "Hello, %s", "Bob");
 
         window.swap_buffers();

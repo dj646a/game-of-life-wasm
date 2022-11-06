@@ -214,8 +214,10 @@ class Renderer
 public:
     Renderer(Font& font);
     void init();
-    void draw_rect(float x, float y, float w, float h, Color color);
-    void draw_rect(float x, float y, float w, float h, const char* filepath);
+
+    void draw_rect(Vec4<float> rect, Color color, const char* filepath, Vec4<float> tex_coords, bool is_textured);
+    void draw_rect(Vec4<float>, Color color);
+    void draw_rect(Vec4<float>, const char* filepath);
     void draw_text(float x, float y, float text_size, const char* format, ...);
     void draw_text(float x, float y, Text& text);
 

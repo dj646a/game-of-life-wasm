@@ -2,7 +2,6 @@
 #include "shaders.hpp"
 #include "utils.hpp"
 
-
 Font::Font(Bitmap<uint32_t>& bitmap, int codepoint_range[2], float font_size, const char* filepath)
 : m_bitmap(bitmap)
 , m_font_size(font_size)
@@ -239,92 +238,64 @@ void Renderer::clear(Color color)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void Renderer::draw_rect(float x, float y, float w, float h, Color color)
+void Renderer::draw_rect(Vec4<float> rect, Color color, const char* filepath, Vec4<float> tex_coords, bool is_textured)
 {
-    // TODO: Deduplicate code in draw_rect functions.
+    if (filepath)
+    {
+        int desired_channels = 4;
+        int image_w, image_h, image_channels;
+        uint8_t* image_data = stbi_load(filepath, &image_w, &image_h, &image_channels, desired_channels);
+        assert(image_data);
+        assert(desired_channels == image_channels);
 
-    float x0 = x;
-    float x1 = x0 + w;
-    float y0 = y;
-    float y1 = y + h;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_w, image_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+        stbi_image_free(image_data);
+    }
 
     Quad quad = {};
     Vertex* vertices = quad;
 
-    vertices[0].position = { x0, y0 };
-    vertices[1].position = { x1, y0 };
-    vertices[2].position = { x0, y1 };
-    vertices[3].position = { x1, y0 };
-    vertices[4].position = { x0, y1 };
-    vertices[5].position = { x1, y1 };
+    vertices[0].position = { rect.x0, rect.y0 };
+    vertices[1].position = { rect.x1, rect.y0 };
+    vertices[2].position = { rect.x0, rect.y1 };
+    vertices[3].position = { rect.x1, rect.y0 };
+    vertices[4].position = { rect.x0, rect.y1 };
+    vertices[5].position = { rect.x1, rect.y1 };
 
     for (int i = 0; i < VERTCIES_PER_QUAD; i++)
         vertices[i].color = color;
 
-    bool is_textured = false;
+    vertices[0].tex_coords = { tex_coords.s0, tex_coords.t0 };
+    vertices[1].tex_coords = { tex_coords.s1, tex_coords.t0 };
+    vertices[2].tex_coords = { tex_coords.s0, tex_coords.t1 };
+    vertices[3].tex_coords = { tex_coords.s1, tex_coords.t0 };
+    vertices[4].tex_coords = { tex_coords.s0, tex_coords.t1 };
+    vertices[5].tex_coords = { tex_coords.s1, tex_coords.t1 };
+
     set_uniform("is_textured", is_textured);
 
     // TODO: Remove when batch rendering suppported
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
     glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
+
 }
 
-void Renderer::draw_rect(float x, float y, float w, float h, const char* filepath)
+void Renderer::draw_rect(Vec4<float> rect, Color color)
 {
-    // TODO: Deduplicate code in draw_rect functions.
+    draw_rect(rect, color, nullptr, { 0, 0, 0, 0 }, false);
+}
 
-    // TODO: Remove when asset strategy is finalized.
-    int desired_channels = 4;
-    int image_w, image_h, image_channels;
-    uint8_t* image_data = stbi_load(filepath, &image_w, &image_h, &image_channels, desired_channels);
-    assert(image_data);
-    assert(desired_channels == image_channels);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_w, image_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
-
-    stbi_image_free(image_data);
-
-    // TODO: What should these be?
+void Renderer::draw_rect(Vec4<float> rect, const char* filepath)
+{
+    // TODO: Find out what the best parameters to use here.
+    //       This will be dependent on our assset packing strategy.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    float x0 = x;
-    float x1 = x0 + w;
-    float y0 = y;
-    float y1 = y + h;
-
-    Quad quad = {};
-    Vertex* vertices = quad;
-
-    vertices[0].position = { x0, y0 };
-    vertices[1].position = { x1, y0 };
-    vertices[2].position = { x0, y1 };
-    vertices[3].position = { x1, y0 };
-    vertices[4].position = { x0, y1 };
-    vertices[5].position = { x1, y1 };
-
-    for (int i = 0; i < VERTCIES_PER_QUAD; i++)
-        vertices[i].color = COLOR_WHITE;
-
-    float s0 = 0;
-    float s1 = 1;
-    float t0 = 0;
-    float t1 = 1;
-
-    vertices[0].tex_coords = { s0, t0 };
-    vertices[1].tex_coords = { s1, t0 };
-    vertices[2].tex_coords = { s0, t1 };
-    vertices[3].tex_coords = { s1, t0 };
-    vertices[4].tex_coords = { s0, t1 };
-    vertices[5].tex_coords = { s1, t1 };
-
-    set_uniform("is_textured", true);
-
-    // TODO: Remove when batch rendering suppported
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
+    
+    draw_rect(rect, COLOR_WHITE, filepath, { 0, 0, 1, 1 }, true);
 }
 
 void Renderer::draw_text(float x, float y, float text_size ,const char* format, ...)
@@ -339,19 +310,17 @@ void Renderer::draw_text(float x, float y, float text_size ,const char* format, 
 
 void Renderer::draw_text(float x, float y, Text& text)
 {
-    text.adjust_text(x, y);
-    
-    // TODO: Deduplicate code in draw_rect functions.
-    Bitmap<uint32_t>& font_bitmap = m_font.get_bitmap();
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, font_bitmap.get_width(), font_bitmap.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, font_bitmap.get_pixel_buffer());
-
-    // TODO: What should these be?
+    // TODO: Find out what the best parameters to use here.
+    //       This will be dependent on our assset packing strategy.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    text.adjust_text(x, y);
+    Bitmap<uint32_t>& font_bitmap = m_font.get_bitmap();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, font_bitmap.get_width(), font_bitmap.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, font_bitmap.get_pixel_buffer());
 
     Array<Vec4<float>>& glyph_rects       = text.get_glyph_rects();
     Array<Vec4<float>>& glyph_text_coords = text.get_glyph_tex_coords();
@@ -359,44 +328,8 @@ void Renderer::draw_text(float x, float y, Text& text)
     for (size_t i = 0; i < text.get_length(); i++)
     {
         Vec4<float> glyph_rect = glyph_rects[i];
-        
-        float x0 = glyph_rect.x0;
-        float x1 = glyph_rect.x1;
-        float y0 = glyph_rect.y0;
-        float y1 = glyph_rect.y1;
-
-        Quad quad = {};
-        Vertex* vertices = quad;
-
-        vertices[0].position = { x0, y0 };
-        vertices[1].position = { x1, y0 };
-        vertices[2].position = { x0, y1 };
-        vertices[3].position = { x1, y0 };
-        vertices[4].position = { x0, y1 };
-        vertices[5].position = { x1, y1 };
-
-        for (int i = 0; i < VERTCIES_PER_QUAD; i++)
-            vertices[i].color = COLOR_WHITE;
-
         Vec4<float> glyph_tex_coord = glyph_text_coords[i];
-
-        float s0 = glyph_tex_coord.s0;
-        float s1 = glyph_tex_coord.s1;
-        float t0 = glyph_tex_coord.t0;
-        float t1 = glyph_tex_coord.t1;
-
-        vertices[0].tex_coords = { s0, t0 };
-        vertices[1].tex_coords = { s1, t0 };
-        vertices[2].tex_coords = { s0, t1 };
-        vertices[3].tex_coords = { s1, t0 };
-        vertices[4].tex_coords = { s0, t1 };
-        vertices[5].tex_coords = { s1, t1 };
-
-        set_uniform("is_textured", true);
-
-        // TODO: Remove when batch rendering suppported
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, VERTCIES_PER_QUAD);
+        draw_rect(glyph_rect, COLOR_WHITE, nullptr, glyph_tex_coord, true);
     }
 }
 
