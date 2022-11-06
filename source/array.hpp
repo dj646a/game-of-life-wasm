@@ -94,4 +94,47 @@ public:
     {
         return m_size;
     }
+
+    /* ------------------------------------- Iterator ------------------------------------- */
+    class Iterator
+    {
+        T* m_ptr;
+
+    public:
+        Iterator(T* buffer)
+        : m_ptr(buffer)
+        {}
+
+        Iterator operator++()
+        {
+            Iterator iterator = *this;
+            m_ptr++;
+            return iterator;
+        }
+
+        T& operator*()
+        {
+            return *m_ptr;
+        }
+
+        bool operator!=(const Iterator& rhs)
+        {
+            return m_ptr != rhs.m_ptr;
+        }
+    };
+
+    Iterator begin()
+    {
+        return Iterator(m_buffer);
+    }
+
+    Iterator end()
+    {
+        return Iterator(m_buffer + m_size);
+    }
+
+    T& operator[](size_t index)
+    {
+        return get(index);
+    }
 };

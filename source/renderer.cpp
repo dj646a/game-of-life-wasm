@@ -85,7 +85,7 @@ Text::Text(Font& font, float text_size, const char* format, va_list va_list)
     {
         // REMINDER: Was about to do scaling here.
         // TODO: Handle scaling.
-        char character         = buffer.get(i);
+        char character         = buffer[i];
         stbtt_packedchar glyph = m_font.get_glyph(character);
 
         float glyph_x_offset   = glyph.xoff * scaling;
@@ -140,7 +140,7 @@ void Text::adjust_text(float x, float y)
 {
     for (size_t i = 0; i < m_length; i++)
     {
-        Vec4<float>& glyph_rect = m_glyph_rects.get(i);
+        Vec4<float>& glyph_rect = m_glyph_rects[i];
         glyph_rect.x0 += x;
         glyph_rect.x1 += x;
 
@@ -154,14 +154,14 @@ int Text::get_length()
     return m_length;
 }
 
-Vec4<float> Text::get_glyph_rect(size_t index)
+Array<Vec4<float>>& Text::get_glyph_rects()
 {
-    return m_glyph_rects.get(index);
+    return m_glyph_rects;
 }
 
-Vec4<float> Text::get_glyph_tex_coord(size_t index)
+Array<Vec4<float>>& Text::get_glyph_tex_coords()
 {
-    return m_glyph_tex_coords.get(index);
+    return m_glyph_tex_coords;
 }
 
 static void glewErrorAndExit(GLenum error_code)
@@ -183,7 +183,7 @@ stbtt_packedchar Font::get_glyph(char c)
 {
     int char_index = static_cast<int>(c);
     assert(char_index >= m_first_codepoint && char_index <= m_last_codepoint);
-    return m_packedchars.get(char_index);
+    return m_packedchars[char_index];
 }
 
 float Font::get_font_size()
@@ -355,9 +355,12 @@ void Renderer::draw_text(float x, float y, Text& text)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+    Array<Vec4<float>>& glyph_rects       = text.get_glyph_rects();
+    Array<Vec4<float>>& glyph_text_coords = text.get_glyph_tex_coords();
+
     for (size_t i = 0; i < text.get_length(); i++)
     {
-        Vec4<float> glyph_rect = text.get_glyph_rect(i);
+        Vec4<float> glyph_rect = glyph_rects[i];
         
         float x0 = glyph_rect.x0;
         float x1 = glyph_rect.x1;
@@ -377,7 +380,7 @@ void Renderer::draw_text(float x, float y, Text& text)
         for (int i = 0; i < VERTCIES_PER_QUAD; i++)
             vertices[i].color = COLOR_WHITE;
 
-        Vec4<float> glyph_tex_coord = text.get_glyph_tex_coord(i);
+        Vec4<float> glyph_tex_coord = glyph_text_coords[i];
 
         float s0 = glyph_tex_coord.s0;
         float s1 = glyph_tex_coord.s1;

@@ -121,11 +121,6 @@ public:
             return *m_ptr; 
         }
 
-        bool operator==(const Iterator& rhs)
-        {
-            return m_ptr == rhs.m_ptr;
-        }
-
         bool operator!=(const Iterator& rhs)
         {
             return m_ptr != rhs.m_ptr;
@@ -185,6 +180,10 @@ public:
     void operator=(const Text& other);
     void adjust_text(float x, float y);
     int get_length();
+
+    Array<Vec4<float>>& get_glyph_rects();
+    Array<Vec4<float>>& get_glyph_tex_coords();
+
     Vec4<float> get_glyph_rect(size_t index);
     Vec4<float> get_glyph_tex_coord(size_t index);
 
