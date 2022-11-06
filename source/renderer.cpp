@@ -2,17 +2,6 @@
 #include "shaders.hpp"
 #include "utils.hpp"
 
-#include <GL/glew.h>
-#include <GL/gl.h>
-
-#include <stb/stb_image.h>
-
-// TODO: Remove when "project base" file done.
-#include <cstdio>
-#include <cstdlib>
-#include <cassert>
-#include <cstring>
-
 void* Bitmap::get_pixel_buffer()
 {
     return m_pixels;

@@ -1,9 +1,5 @@
 #include "utils.hpp"
 
-#include <cassert>
-#include <cstdlib>
-#include <cstring>
-
 File::File(const char* filepath)
 {
     m_handle = open_or_panic(filepath);

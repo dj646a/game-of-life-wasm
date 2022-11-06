@@ -1,10 +1,5 @@
 #pragma once
 
-#include <cstdarg>
-
-#include <stb/stb_rect_pack.h>
-#include <stb/stb_truetype.h>
-
 #include "array.hpp"
 
 typedef unsigned int GLuint;

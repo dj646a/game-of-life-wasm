@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cstdio>
-#include <cstddef>
-
 class File
 {
     void* m_handle;

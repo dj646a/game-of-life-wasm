@@ -7,3 +7,13 @@ we do not rely on a pre-existing Web Assembly runtime environments such as those
 
 In theory this will enable us to distribute our application with a smaller
 footprint.
+
+# Quick start
+#### Native build
+```
+clang++ -O3 -include ./source/base.hpp ./source/*.cpp -o game-of-life -lSDL2 -lGL -lGLEW -lstb -o game-of-life && ./game-of-life
+```
+#### Wasm build
+```
+Coming soon
+```

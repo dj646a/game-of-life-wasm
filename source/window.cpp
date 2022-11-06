@@ -1,9 +1,6 @@
 #include "window.hpp"
 #include "renderer.hpp"
 
-// TODO: Remove when "project base" file done.
-#include <SDL2/SDL.h>
-
 static void SDL_ErrorAndExit()
 {
     fprintf(stderr, "%s\n", SDL_GetError());
