@@ -1,3 +1,5 @@
+#pragma once
+
 class Window
 {
     class SDL_Window* m_handle;

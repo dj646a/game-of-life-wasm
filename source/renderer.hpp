@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdarg>
 
 #include <stb/stb_rect_pack.h>

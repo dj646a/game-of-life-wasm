@@ -9,7 +9,6 @@
     
     HIGH PRIORITY
     Renderer should batch draw calls.
-    Pragma once in header files.
 
     MEDIUM PRIORITY
     Create platform abstractions for:
