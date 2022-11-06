@@ -70,7 +70,7 @@ void Bitmap::copy_grayscale_as_rgba(Bitmap& grayscale_bitmap)
 }
 
 Bitmap::Bitmap(int width, int height, int channels)
-: m_size({width, height})
+: m_size({ width, height })
 , m_channels(channels)
 , m_stride(width * channels)
 {
@@ -93,31 +93,32 @@ Font::Font(Bitmap& bitmap, int codepoint_range[2], float font_size, const char* 
 , m_last_codepoint(codepoint_range[1])
 {
 
-    int grayscale_channels = 1;
-    Bitmap grayscale_bitmap(m_bitmap.get_width(), m_bitmap.get_height(), grayscale_channels);
+    int grayscale_channels      = 1;
+    int grayscale_bitmap_width  = m_bitmap.get_width();
+    int grayscale_bitmap_height = m_bitmap.get_height();
+    Bitmap grayscale_bitmap(grayscale_bitmap_width, grayscale_bitmap_height, grayscale_channels);
 
-    stbtt_pack_context pack_context = {};
-    int padding                     = 1;
+    stbtt_pack_context pack_context        = {};
+    unsigned char* grayscale_bitmap_pixels = static_cast<unsigned char*>(grayscale_bitmap.get_pixel_buffer());
+    int grayscale_bitmap_stride            = grayscale_bitmap.get_stride();
+    int padding                            = 1;
 
     stbtt_PackBegin(&pack_context,
-                    static_cast<unsigned char*>(grayscale_bitmap.get_pixel_buffer()),
-                    grayscale_bitmap.get_width(),
-                    grayscale_bitmap.get_height(),
-                    grayscale_bitmap.get_stride(),
+                    grayscale_bitmap_pixels,
+                    grayscale_bitmap_width,
+                    grayscale_bitmap_height,
+                    grayscale_bitmap_stride,
                     padding,
                     nullptr);
 
     File font_file("./assets/font.ttf");
-    int font_index        = 0;
-    int num_of_codepoints = m_last_codepoint - m_first_codepoint + 1;
-    // TODO: Remove malloc when memory strategy finalized
+    unsigned char* font_data = static_cast<unsigned char*>(font_file.get_data());
+    int font_index           = 0;
+    int num_of_codepoints    = m_last_codepoint - m_first_codepoint + 1;
     m_packedchars.resize(num_of_codepoints);
 
-    // TODO: Remove when debugged.
-    // stbtt_packedchar temp_packed_chars[128] = {};
-        
     stbtt_PackFontRange(&pack_context,
-                        static_cast<const unsigned char*>(font_file.get_data()),
+                        font_data,
                         font_index,
                         font_size,
                         m_first_codepoint,
