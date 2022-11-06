@@ -56,14 +56,12 @@ public:
         return m_buffer[m_used-1];
     }
 
-    // TODO: Overload [] operator
     T& get(size_t index)
     {
         assert(index >= 0 && index < m_size);
         return m_buffer[index];
     }
 
-    // TODO: Overload [] operator to get a reference to the array index
     void set(size_t index, T value)
     {
         assert(index >= 0 && index < m_size);

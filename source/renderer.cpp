@@ -83,8 +83,6 @@ Text::Text(Font& font, float text_size, const char* format, va_list va_list)
     // TODO: If we support unicode then we'll have to alter this slightly.
     for (size_t i = 0; i < m_length; i++) 
     {
-        // REMINDER: Was about to do scaling here.
-        // TODO: Handle scaling.
         char character         = buffer[i];
         stbtt_packedchar glyph = m_font.get_glyph(character);
 
