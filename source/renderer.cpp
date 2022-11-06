@@ -2,79 +2,8 @@
 #include "shaders.hpp"
 #include "utils.hpp"
 
-void* Bitmap::get_pixel_buffer()
-{
-    return m_pixels;
-}
 
-int Bitmap::get_width()
-{
-    return m_size.w;
-}
-
-int Bitmap::get_height()
-{
-    return m_size.h;
-}
-
-int Bitmap::get_stride()
-{
-    return m_stride;
-}
-
-int Bitmap::get_channels()
-{
-    return m_channels;
-}
-
-void Bitmap::copy_grayscale_as_rgba(Bitmap& grayscale_bitmap)
-{
-    assert(grayscale_bitmap.get_height() == m_size.h);
-    assert(grayscale_bitmap.get_width() == m_size.w);
-    assert(grayscale_bitmap.get_channels() == 1);
-
-    unsigned char* grayscale_pixels = static_cast<unsigned char*>(grayscale_bitmap.get_pixel_buffer());
-    unsigned char* rbga_pixels      = static_cast<unsigned char*>(m_pixels);
-
-    int width = m_size.w;
-    int height = m_size.h;
-    
-    // TODO: Pixel C++ iterator
-    for (int y = 0; y < height; y++)
-    {
-        int grayscale_index             = y * grayscale_bitmap.get_stride();
-        unsigned char* grayscale_offset = &grayscale_pixels[grayscale_index];
-
-        int rgba_index                  = y * m_stride;
-        unsigned char* rbga_offset      = &rbga_pixels[rgba_index];
-
-        for (int x = 0; x < width; x++)
-        {
-            rbga_offset[x * 4 + 0] = grayscale_offset[x];
-            rbga_offset[x * 4 + 1] = grayscale_offset[x];
-            rbga_offset[x * 4 + 2] = grayscale_offset[x];
-            rbga_offset[x * 4 + 3] = grayscale_offset[x];
-        }
-    }
-}
-
-Bitmap::Bitmap(int width, int height, int channels)
-: m_size({ width, height })
-, m_channels(channels)
-, m_stride(width * channels)
-{
-    // TODO: Remove malloc when memory strategy finalized.
-    m_pixels = malloc(width * height * channels);
-    memset(m_pixels, 0, width * height * channels);
-}
-
-Bitmap::~Bitmap()
-{
-    free(m_pixels);
-    memset(this, 0, sizeof(*this));
-}
-
-Font::Font(Bitmap& bitmap, int codepoint_range[2], float font_size, const char* filepath)
+Font::Font(Bitmap<uint32_t>& bitmap, int codepoint_range[2], float font_size, const char* filepath)
 : m_bitmap(bitmap)
 , m_font_size(font_size)
 , m_filepath(filepath)
@@ -85,10 +14,10 @@ Font::Font(Bitmap& bitmap, int codepoint_range[2], float font_size, const char* 
     int grayscale_channels      = 1;
     int grayscale_bitmap_width  = m_bitmap.get_width();
     int grayscale_bitmap_height = m_bitmap.get_height();
-    Bitmap grayscale_bitmap(grayscale_bitmap_width, grayscale_bitmap_height, grayscale_channels);
+    Bitmap<uint8_t> grayscale_bitmap(grayscale_bitmap_width, grayscale_bitmap_height, grayscale_channels);
 
     stbtt_pack_context pack_context        = {};
-    unsigned char* grayscale_bitmap_pixels = static_cast<unsigned char*>(grayscale_bitmap.get_pixel_buffer());
+    uint8_t* grayscale_bitmap_pixels = static_cast<uint8_t*>(grayscale_bitmap.get_pixel_buffer());
     int grayscale_bitmap_stride            = grayscale_bitmap.get_stride();
     int padding                            = 1;
 
@@ -101,7 +30,7 @@ Font::Font(Bitmap& bitmap, int codepoint_range[2], float font_size, const char* 
                     nullptr);
 
     File font_file("./assets/font.ttf");
-    unsigned char* font_data = static_cast<unsigned char*>(font_file.get_data());
+    uint8_t* font_data = static_cast<uint8_t*>(font_file.get_data());
     int font_index           = 0;
     int num_of_codepoints    = m_last_codepoint - m_first_codepoint + 1;
     m_packedchars.resize(num_of_codepoints);
@@ -124,7 +53,7 @@ Font::~Font()
     memset(this, 0, sizeof(*this));
 }
 
-Bitmap& Font::get_bitmap()
+Bitmap<uint32_t>& Font::get_bitmap()
 {
     return m_bitmap;
 }
@@ -349,7 +278,7 @@ void Renderer::draw_rect(float x, float y, float w, float h, const char* filepat
     // TODO: Remove when asset strategy is finalized.
     int desired_channels = 4;
     int image_w, image_h, image_channels;
-    unsigned char* image_data = stbi_load(filepath, &image_w, &image_h, &image_channels, desired_channels);
+    uint8_t* image_data = stbi_load(filepath, &image_w, &image_h, &image_channels, desired_channels);
     assert(image_data);
     assert(desired_channels == image_channels);
 
@@ -415,7 +344,7 @@ void Renderer::draw_text(float x, float y, Text& text)
     text.adjust_text(x, y);
     
     // TODO: Deduplicate code in draw_rect functions.
-    Bitmap& font_bitmap = m_font.get_bitmap();
+    Bitmap<uint32_t>& font_bitmap = m_font.get_bitmap();
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, font_bitmap.get_width(), font_bitmap.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, font_bitmap.get_pixel_buffer());
 

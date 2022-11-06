@@ -29,24 +29,121 @@ union Vec4
     struct { T s0, t0, s1, t1; };
 };
 
+template <typename T>
 class Bitmap
 {
-    void* m_pixels;
+    T* m_pixels;
     struct { int w, h; } m_size;
     int m_channels;
     int m_stride;
 
 public:
-    Bitmap(int width, int height, int channels);
-    ~Bitmap();
+    Bitmap(int width, int height, int channels)
+    : m_size({ width, height })
+    , m_channels(channels)
+    , m_stride(width * channels)
+    {
+        // TODO: Remove malloc when memory strategy finalized.
+        m_pixels = (T*) malloc(width * height * channels);
+        memset(m_pixels, 0, width * height * channels);
+    }
 
-    void* get_pixel_buffer();
-    unsigned char* get_pixel_buffer_as_u8();
-    int get_width();
-    int get_height();
-    int get_stride();
-    int get_channels();
-    void copy_grayscale_as_rgba(Bitmap& grayscale_bitmap);
+    Bitmap()
+    {
+        free(m_pixels);
+        memset(this, 0, sizeof(*this));
+    }
+
+    T* get_pixel_buffer()
+    {
+        return m_pixels;
+    }
+
+    int get_width()
+    {
+        return m_size.w;
+    }
+
+    int get_height()
+    {
+        return m_size.h;
+    }
+
+    int get_stride()
+    {
+        return m_stride;
+    }
+
+    int get_channels()
+    {
+        return m_channels;
+    }
+
+    void copy_grayscale_as_rgba(Bitmap<uint8_t>& grayscale_bitmap)
+    {
+        assert(grayscale_bitmap.get_height() == m_size.h);
+        assert(grayscale_bitmap.get_width() == m_size.w);
+        assert(grayscale_bitmap.get_channels() == 1);
+
+        uint32_t* rbga_pixels = m_pixels;
+        for (uint8_t pixel : grayscale_bitmap)
+        {
+            uint8_t r = pixel;
+            uint8_t g = pixel;
+            uint8_t b = pixel;
+            uint8_t a = pixel;
+
+            *rbga_pixels++ = (a << 24) | (b << 16) | (g << 8) | (r << 0);
+        }
+    }
+
+    /* ------------------------------------- Iterator ------------------------------------- */
+
+    class Iterator
+    {
+        uint8_t* m_ptr;
+        int m_channels;
+    public:
+        Iterator(void* pixel_ptr, int channels)
+        : m_ptr(static_cast<uint8_t*>(pixel_ptr))
+        , m_channels(channels)
+        {}
+
+        Iterator operator++()
+        {
+            Iterator iterator = *this;
+            m_ptr += m_channels;
+            return iterator;
+        }
+
+        T& operator*() 
+        { 
+            return *m_ptr; 
+        }
+
+        bool operator==(const Iterator& rhs)
+        {
+            return m_ptr == rhs.m_ptr;
+        }
+
+        bool operator!=(const Iterator& rhs)
+        {
+            return m_ptr != rhs.m_ptr;
+        }
+    };
+
+    Iterator begin()
+    {
+        return Iterator(m_pixels, m_channels);
+    }
+
+    Iterator end()
+    {
+        uint8_t* pixels_ptr = static_cast<uint8_t*>(m_pixels);
+        int end_index = m_size.w * m_size.h * m_channels;
+        uint8_t* pixels_end = &pixels_ptr[end_index];
+        return Iterator(pixels_end, m_channels);
+    }
 };
 
 class Font
@@ -55,17 +152,17 @@ class Font
     int m_first_codepoint;
     int m_last_codepoint;
     
-    Bitmap& m_bitmap;
+    Bitmap<uint32_t>& m_bitmap;
     float m_font_size;
     Array<stbtt_packedchar> m_packedchars;
 
 public:
-    Font(Bitmap& bitmap, int codepoint_range[2], float font_size, const char* filepath);
+    Font(Bitmap<uint32_t>& bitmap, int codepoint_range[2], float font_size, const char* filepath);
     ~Font();
     stbtt_packedchar get_glyph(char c);
     float get_font_size();
 
-    Bitmap& get_bitmap();
+    Bitmap<uint32_t>& get_bitmap();
 };
 
 class Text

@@ -23,7 +23,7 @@ int main()
     int font_bitmap_width    = 1000;
     int font_bitmap_height   = 1000;
     int font_bitmap_channels = 4;
-    Bitmap font_bitmap(font_bitmap_width, font_bitmap_height, font_bitmap_channels);
+    Bitmap<uint32_t> font_bitmap(font_bitmap_width, font_bitmap_height, font_bitmap_channels);
     
     // TODO: Get a font with a "permissive" licence and commit it into the project.
     // NOTE: If ./assets/font.ttf doesn't exist then place it in the folder.
