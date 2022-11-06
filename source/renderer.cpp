@@ -158,44 +158,51 @@ Text::Text(Font& font, float text_size, const char* format, va_list va_list)
     m_glyph_rects.resize(m_length);
     m_glyph_tex_coords.resize(m_length);
 
-    float x = 0;
-    float y = 0;
+    float x       = 0;
+    float y       = 0;
+    float scaling = text_size / font.get_font_size();
 
     // TODO: If we support unicode then we'll have to alter this slightly.
     for (size_t i = 0; i < m_length; i++) 
     {
+        // REMINDER: Was about to do scaling here.
         // TODO: Handle scaling.
-        char character = buffer.get(i);
+        char character         = buffer.get(i);
         stbtt_packedchar glyph = m_font.get_glyph(character);
-        float glyph_width  = glyph.x1 - glyph.x0;
-        float glyph_height = glyph.y1 - glyph.y0;
+
+        float glyph_x_offset   = glyph.xoff * scaling;
+        float glyph_y_offset   = glyph.yoff * scaling;
+        float glyph_width      = (glyph.x1 - glyph.x0) * scaling;
+        float glyph_height     = (glyph.y1 - glyph.y0) * scaling;
+        float glyph_x_advance  = glyph.xadvance * scaling;
 
         /* ------------------------------- Glyph screen position ------------------------------ */
         Vec4<float> glyph_rect = {};
 
-        glyph_rect.x0 = x + glyph.xoff;
+        glyph_rect.x0 = x + glyph_x_offset;
         glyph_rect.x1 = glyph_rect.x0 + glyph_width;
-        x += glyph.xadvance;
+        x += glyph_x_advance;
 
-        glyph_rect.y0 = y + glyph.yoff;
+        glyph_rect.y0 = y + glyph_y_offset;
         glyph_rect.y1 = glyph_rect.y0 + glyph_height;
 
         m_glyph_rects.push(glyph_rect);
 
         /* --------------------------- Glpyh texture sample position -------------------------- */
-        Vec4<float> glyp_tex_coord = {};
-        glyp_tex_coord.s0 = (float) glyph.x0 / font.get_bitmap().get_width();
-        glyp_tex_coord.s1 = (float) glyph.x1 / font.get_bitmap().get_width();
-        glyp_tex_coord.t0 = (float) glyph.y0 / font.get_bitmap().get_height();
-        glyp_tex_coord.t1 = (float) glyph.y1 / font.get_bitmap().get_height();
+        Vec4<float> glyph_tex_coord = {};
+        glyph_tex_coord.s0 = (float) glyph.x0 / font.get_bitmap().get_width();
+        glyph_tex_coord.s1 = (float) glyph.x1 / font.get_bitmap().get_width();
+        glyph_tex_coord.t0 = (float) glyph.y0 / font.get_bitmap().get_height();
+        glyph_tex_coord.t1 = (float) glyph.y1 / font.get_bitmap().get_height();
 
-        m_glyph_tex_coords.push(glyp_tex_coord);
+        m_glyph_tex_coords.push(glyph_tex_coord);
     }
 
     Vec4<float> first_glyph = m_glyph_rects.first();
     Vec4<float> last_glyph  = m_glyph_rects.last();
-    m_size.w = last_glyph.x1 - first_glyph.x0;
-    m_size.h = text_size;
+
+    m_size.w                = last_glyph.x1 - first_glyph.x0;
+    m_size.h                = text_size;
 }
 
 void Text::operator=(const Text& other)
@@ -259,6 +266,11 @@ stbtt_packedchar Font::get_glyph(char c)
     int char_index = static_cast<int>(c);
     assert(char_index >= m_first_codepoint && char_index <= m_last_codepoint);
     return m_packedchars.get(char_index);
+}
+
+float Font::get_font_size()
+{
+    return m_font_size;
 }
 
 void Renderer::init()

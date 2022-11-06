@@ -64,8 +64,9 @@ class Font
 
 public:
     Font(Bitmap& bitmap, int codepoint_range[2], float font_size, const char* filepath);
-    stbtt_packedchar get_glyph(char c);
     ~Font();
+    stbtt_packedchar get_glyph(char c);
+    float get_font_size();
 
     Bitmap& get_bitmap();
 };
