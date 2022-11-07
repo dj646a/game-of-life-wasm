@@ -188,7 +188,7 @@ public:
     Vec4<float> get_glyph_tex_coord(size_t index);
 
 private:
-    static Text create_text_from_va_list(Font& font, float text_size, const char* format, va_list va_list);
+    void init_text_with_va_list(Font& font, float text_size, const char* format, va_list va_list);
 };
 
 struct Vertex

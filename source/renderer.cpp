@@ -58,17 +58,23 @@ Bitmap<uint32_t>& Font::get_bitmap()
 }
 
 Text::Text(Font& font, float text_size, const char* format, ...)
-: m_font(font)
+: m_text_size(text_size)
+, m_font(font)
 {
     va_list va_list;
     va_start(va_list, format);
-    *this = Text(font, text_size, format, va_list);
+    init_text_with_va_list(font, text_size, format, va_list);
     va_end(va_list);
 }
 
 Text::Text(Font& font, float text_size, const char* format, va_list va_list)
 : m_text_size(text_size)
 , m_font(font)
+{
+    init_text_with_va_list(font, text_size, format, va_list);
+}
+
+void Text::init_text_with_va_list(Font& font, float text_size, const char* format, va_list va_list)
 {
     Array<char> buffer(TEXT_MAX);
     m_length = vsnprintf(buffer.get_underlying_buffer(), TEXT_MAX-1, format, va_list);
@@ -119,19 +125,6 @@ Text::Text(Font& font, float text_size, const char* format, va_list va_list)
     m_size.w                = last_glyph.x1 - first_glyph.x0;
     m_size.h                = text_size;
 }
-
-void Text::operator=(const Text& other)
-{
-    *this = Text(other);
-}
-
-Text::Text(const Text& text)
-: m_font(text.m_font)
-, m_size(text.m_size)
-, m_length(text.m_length)
-, m_text_size(text.m_text_size)
-, m_glyph_rects(text.m_glyph_rects)
-{ }
 
 void Text::adjust_text(float x, float y)
 {
@@ -429,8 +422,7 @@ void Renderer::flush_colored()
     size_t num_of_vertices           = quad_buffer_used * VERTCIES_PER_QUAD;
     glDrawArrays(GL_TRIANGLES, 0, num_of_vertices);
 
-    // TODO: Just clear?
-    m_colored_quads.clear_and_zero();
+    m_colored_quads.clear();
 }
 
 void Renderer::flush_textured()
@@ -451,8 +443,7 @@ void Renderer::flush_textured()
     size_t num_of_vertices           = quad_buffer_used * VERTCIES_PER_QUAD;
     glDrawArrays(GL_TRIANGLES, 0, num_of_vertices);
 
-    // TODO: Just clear?
-    m_textured_quads.clear_and_zero();
+    m_textured_quads.clear();
 }
 
 void Renderer::flush_text()
@@ -485,8 +476,7 @@ void Renderer::flush_text()
     size_t num_of_vertices           = quad_buffer_used * VERTCIES_PER_QUAD;
     glDrawArrays(GL_TRIANGLES, 0, num_of_vertices);
 
-    // TODO: Just clear?
-    m_text_quads.clear_and_zero();
+    m_text_quads.clear();
 }
 
 void Renderer::push_quad_colored(Quad quad)
